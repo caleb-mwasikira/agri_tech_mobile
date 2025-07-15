@@ -2,13 +2,15 @@ package com.example.agritech.data
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.example.agritech.R
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 fun getCurrentDateTime(): String {
     val currentDateTime = LocalDateTime.now()
-    val formatter = DateTimeFormatter.ofPattern("dd MMM uuuu")
+    val formatter = DateTimeFormatter.ofPattern("yyyy MMM EEEE")
     return currentDateTime.format(formatter)
 }
 
@@ -31,7 +33,7 @@ val notes = mutableListOf(
         id = 2,
         title = "How Shade-Grown Coffee Enhances Flavor and Sustainability",
         description = "Discover why shade-grown coffee farms are becoming more popular and how they benefit both flavor quality and the environment",
-        imageUrl = R.drawable.coffee_beans,
+        imageUrl = R.drawable.coffee_beans_24dp,
     ),
     Note(
         id = 3,

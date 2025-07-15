@@ -52,6 +52,9 @@ dependencies {
 
     implementation("androidx.compose.ui:ui-text:1.8.3")
     implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation(libs.androidx.foundation.android)
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
