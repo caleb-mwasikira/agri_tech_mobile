@@ -12,6 +12,16 @@ fun getCurrentDateTime(): String {
     return currentDateTime.format(formatter)
 }
 
+val daysOfWeek = mutableListOf(
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+)
+
 @Immutable
 data class Note(
     val id: Int,
@@ -31,7 +41,7 @@ val notes = mutableListOf(
         id = 2,
         title = "How Shade-Grown Coffee Enhances Flavor and Sustainability",
         description = "Discover why shade-grown coffee farms are becoming more popular and how they benefit both flavor quality and the environment",
-        imageUrl = R.drawable.coffee_beans,
+        imageUrl = R.drawable.coffee_beans_24dp,
     ),
     Note(
         id = 3,
