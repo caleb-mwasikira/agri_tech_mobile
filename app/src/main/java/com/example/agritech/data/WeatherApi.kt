@@ -5,7 +5,6 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.Serializable
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -16,7 +15,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class LocalDateTimeDeserializer : JsonDeserializer<LocalDateTime> {
-    override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): LocalDateTime {
+    override fun deserialize(
+        json: JsonElement?,
+        typeOfT: Type?,
+        context: JsonDeserializationContext?
+    ): LocalDateTime {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
         return LocalDateTime.parse(json?.asString, formatter)
     }
@@ -30,12 +33,8 @@ data class Weather(
     val precip: Float,
 )
 
-data class Recommendation(
+data class RecommendationResponse(
     val plant: String,
-    val avgTemp: Double,
-    val avgPrecip: Double,
-    val avgHumidity: Double,
-    val avgSolarRadiation: Double,
     val recommendations: List<String>
 )
 
@@ -48,11 +47,6 @@ data class PlantThreshold(
 )
 
 interface WeatherApi {
-    @GET("weather/{month}")
-    suspend fun getMonthlyWeather(
-        @Path("month") month: Int
-    ): List<Weather>
-
     @GET("weather/{month}/{day}")
     suspend fun getThisWeeksWeather(
         @Path("month") month: Int,
@@ -62,11 +56,12 @@ interface WeatherApi {
     @GET("weather/today")
     suspend fun getTodaysWeather(): Weather
 
-    @GET("recommendations/{month}")
-    suspend fun getThisMonthsRecommendation(
+    @GET("recommendations/{month}/{day}")
+    suspend fun getWeeklyRecommendation(
         @Path("month") month: Int,
+        @Path("day") day: Int,
         @Query("plant") plant: String,
-    ): Recommendation
+    ): RecommendationResponse
 
     @GET("plant_thresholds/{plant}")
     suspend fun getPlantThresholds(
@@ -80,7 +75,7 @@ val gson = GsonBuilder()
 
 val api: WeatherApi by lazy {
     Retrofit.Builder()
-        .baseUrl("http://192.168.43.211:5000/")
+        .baseUrl("http://192.168.43.141:5000/")
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
         .create(WeatherApi::class.java)

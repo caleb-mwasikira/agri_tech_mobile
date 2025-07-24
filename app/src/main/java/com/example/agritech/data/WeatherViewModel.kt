@@ -12,28 +12,7 @@ class WeatherViewModel : ViewModel() {
     }
 
     private val monthlyWeatherData = MutableStateFlow(mutableMapOf<Int, List<Weather>>())
-    private val monthlyRecommendations =
-        MutableStateFlow(mutableMapOf<String, Recommendation>())
     private val plantThresholds = MutableStateFlow(mutableMapOf<String, PlantThreshold>())
-
-    suspend fun getMonthlyWeather(month: Int): List<Weather> {
-        return try {
-            // Check if month weather data was already fetched
-            var monthsWeather = monthlyWeatherData.value[month]
-            if (monthsWeather == null) {
-                monthsWeather = api.getMonthlyWeather(month)
-                monthlyWeatherData.update { oldMap ->
-                    oldMap[month] = monthsWeather
-                    oldMap
-                }
-            }
-            Log.d(TAG, "getMonthlyWeather(month=$month); $monthsWeather")
-            monthsWeather
-        } catch (e: Exception) {
-            Log.e(TAG, "getMonthlyWeather(month=$month); ${e.message}")
-            emptyList<Weather>()
-        }
-    }
 
     suspend fun getThisWeeksWeather(month: Int, dayOfMonth: Int): List<Weather> {
         return try {
@@ -54,7 +33,7 @@ class WeatherViewModel : ViewModel() {
                 }
             }
 
-            Log.d(TAG, "getThisWeeksWeather(month=$month, dayOfMonth=$dayOfMonth); $weeklyForecast")
+            Log.d(TAG, "getThisWeeksWeather(month=$month, dayOfMonth=$dayOfMonth)")
             weeklyForecast
         } catch (e: Exception) {
             Log.e(TAG, "getThisWeeksWeather(month=$month, dayOfMonth=$dayOfMonth); ${e.message}")
@@ -65,7 +44,7 @@ class WeatherViewModel : ViewModel() {
     suspend fun getTodaysWeather(): Weather? {
         return try {
             val todaysWeather = api.getTodaysWeather()
-            Log.d(TAG, "getTodaysWeather(); $todaysWeather")
+            Log.d(TAG, "getTodaysWeather()")
             todaysWeather
         } catch (e: Exception) {
             Log.e(TAG, "getTodaysWeather(); ${e.message}")
@@ -73,24 +52,17 @@ class WeatherViewModel : ViewModel() {
         }
     }
 
-    suspend fun getThisMonthsRecommendation(month: Int, plant: String): Recommendation? {
+    suspend fun getWeeklyRecommendations(month: Int, day: Int, plant: String): List<String> {
         return try {
-            // Check if month recommendations was already fetched
-            val key = "$plant-$month"
-            var result = monthlyRecommendations.value[key]
-            if (result == null) {
-                result = api.getThisMonthsRecommendation(month, plant)
-                monthlyRecommendations.update { oldMap ->
-                    oldMap[key] = result
-                    oldMap
-                }
-            }
-
-            Log.d(TAG, "getThisMonthsRecommendation(month=$month, plant=$plant); $result")
-            result
+            Log.d(TAG, "getWeeklyRecommendations(month=$month, day=$day, plant=$plant)")
+            val response = api.getWeeklyRecommendation(month, day, plant)
+            response.recommendations
         } catch (e: Exception) {
-            Log.e(TAG, "getThisMonthsRecommendation(month=$month, plant=$plant); ${e.message}")
-            null
+            Log.e(
+                TAG,
+                "getWeeklyRecommendations(month=$month, day=$day, plant=$plant); ${e.message}"
+            )
+            emptyList<String>()
         }
     }
 
@@ -105,7 +77,7 @@ class WeatherViewModel : ViewModel() {
                 }
             }
 
-            Log.d(TAG, "getPlantThresholds(plant=$plant); $result")
+            Log.d(TAG, "getPlantThresholds(plant=$plant)")
             result
         } catch (e: Exception) {
             Log.e(TAG, "getPlantThresholds(plant=$plant); ${e.message}")

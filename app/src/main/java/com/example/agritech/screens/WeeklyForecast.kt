@@ -1,5 +1,6 @@
 package com.example.agritech.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,15 +19,20 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,27 +43,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.agritech.R
 import com.example.agritech.data.PlantThreshold
 import com.example.agritech.data.Weather
 import com.example.agritech.data.WeatherViewModel
+import com.example.agritech.data.formatter
 import com.example.agritech.data.getCurrentDateTime
 import com.example.agritech.ui.theme.OutfitFont
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-fun getMostFrequentWeatherCondition(weatherList: List<Weather>): String? {
+fun getMostFrequentWeatherCondition(weatherList: List<Weather>): String {
     val mostFrequentWeatherCondition = weatherList.groupingBy { it.conditions }
         .eachCount()
         .maxByOrNull { it.value }
         ?.key
-    return mostFrequentWeatherCondition
+    var words: List<String> = mostFrequentWeatherCondition?.split("_") ?: return ""
+    words = words.map { word ->
+        word.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+        }
+    }
+    return words.joinToString(" ")
 }
 
 fun getWeatherIcon(condition: String?): Int {
@@ -119,15 +137,30 @@ fun WeeklyForecast(
             )
             var selectedCrop by remember { mutableStateOf("Coffee") }
             var plantThreshold by remember { mutableStateOf<PlantThreshold?>(null) }
-            var recommendation by remember { mutableStateOf<String?>(null) }
+            var recommendations by remember { mutableStateOf<List<String>?>(null) }
+            var currentDate by remember { mutableStateOf(LocalDate.now()) }
+            var weeklyWeatherData by remember { mutableStateOf<List<Weather>?>(null) }
+            var nextWeeksWeatherCondition by remember { mutableStateOf<String?>(null) }
 
-            LaunchedEffect(selectedCrop) {
-                val today = LocalDate.now()
+            LaunchedEffect(selectedCrop, currentDate) {
+                // Get plant threshold and recommendations
                 plantThreshold = weatherViewModel?.getPlantThresholds(selectedCrop)
-                val plantRecommendations = weatherViewModel?.getThisMonthsRecommendation(
-                    today.monthValue, selectedCrop,
+                recommendations = weatherViewModel?.getWeeklyRecommendations(
+                    currentDate.monthValue,
+                    currentDate.dayOfMonth,
+                    selectedCrop,
                 )
-                recommendation = plantRecommendations?.recommendations?.first()
+
+                // Get weather data
+                weeklyWeatherData = weatherViewModel?.getThisWeeksWeather(
+                    currentDate.monthValue, currentDate.dayOfMonth
+                )
+
+                val nextWeek = currentDate.plusDays(7)
+                val nextWeeksWeatherData = weatherViewModel?.getThisWeeksWeather(
+                    nextWeek.monthValue, nextWeek.dayOfMonth
+                ) ?: emptyList()
+                nextWeeksWeatherCondition = getMostFrequentWeatherCondition(nextWeeksWeatherData)
             }
 
             SelectCrop(
@@ -144,34 +177,28 @@ fun WeeklyForecast(
                 precipitation = plantThreshold?.minPrecip?.toInt() ?: 0,
             )
 
-            var currentDate by remember { mutableStateOf(LocalDate.now()) }
-            var weeklyWeatherData by remember { mutableStateOf(listOf<Weather>()) }
-            var nextWeeksWeatherCondition by remember { mutableStateOf<String?>(null) }
-
-            LaunchedEffect(currentDate) {
-                weeklyWeatherData = weatherViewModel?.getThisWeeksWeather(
-                    currentDate.monthValue, currentDate.dayOfMonth
-                ) ?: emptyList()
-
-                val nextWeek = currentDate.plusDays(7)
-                val nextWeeksWeatherData = weatherViewModel?.getThisWeeksWeather(
-                    nextWeek.monthValue, nextWeek.dayOfMonth
-                ) ?: emptyList()
-                nextWeeksWeatherCondition = getMostFrequentWeatherCondition(nextWeeksWeatherData)
-            }
-
             // Recommendation
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text(
-                    "Recommendation",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontFamily = OutfitFont,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Text(
+                        "Recommendations",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = OutfitFont,
+                    )
+                    Text(
+                        currentDate.format(formatter),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontFamily = OutfitFont,
+                    )
+                }
 
                 Text(
-                    recommendation ?: "No Recommendations",
+                    if (recommendations?.isEmpty() == true) "" else recommendations?.first() ?: "",
                     style = MaterialTheme.typography.bodyLarge,
                     fontFamily = OutfitFont,
                 )
@@ -179,10 +206,10 @@ fun WeeklyForecast(
 
             WeeklyForecast(
                 currentDate = currentDate,
-                onSelectCurrentDate = { newDate ->
+                selectCurrentDate = { newDate ->
                     currentDate = newDate
                 },
-                weatherData = weeklyWeatherData,
+                weatherData = weeklyWeatherData ?: emptyList(),
                 nextWeeksWeatherCondition = nextWeeksWeatherCondition ?: ""
             )
         }
@@ -351,19 +378,14 @@ fun CropThresholds(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeeklyForecast(
     currentDate: LocalDate,
-    onSelectCurrentDate: (LocalDate) -> Unit,
+    selectCurrentDate: (LocalDate) -> Unit,
     weatherData: List<Weather>,
     nextWeeksWeatherCondition: String,
 ) {
-    val formatter by remember {
-        mutableStateOf(
-            DateTimeFormatter.ofPattern("dd MMM uuuu")
-        )
-    }
-
     Card(
         colors = CardDefaults.cardColors().copy(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -375,17 +397,70 @@ fun WeeklyForecast(
                 .fillMaxWidth()
                 .padding(24.dp),
         ) {
-            Text(
-                "Weekly Forecast",
-                style = MaterialTheme.typography.titleLarge,
-                fontFamily = OutfitFont,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        "Weekly Forecast",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = OutfitFont,
+                    )
+                    Text(
+                        currentDate.format(formatter),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontFamily = OutfitFont,
+                    )
+                }
 
-            Text(
-                currentDate.format(formatter),
-                style = MaterialTheme.typography.bodyLarge,
-                fontFamily = OutfitFont,
-            )
+                var displayCalendar by remember { mutableStateOf(false) }
+                IconButton(
+                    onClick = {
+                        displayCalendar = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.DateRange,
+                        contentDescription = "Select Date"
+                    )
+                }
+
+                val datePickerState = rememberDatePickerState()
+                val context = LocalContext.current
+
+                if (displayCalendar) {
+                    Dialog(
+                        onDismissRequest = {
+                            displayCalendar = false
+                            val timestamp: Long? = datePickerState.selectedDateMillis
+                            if (timestamp == null) {
+                                Toast.makeText(context, "Please Select A Date", Toast.LENGTH_LONG)
+                                    .show()
+                                return@Dialog
+                            }
+
+                            val selectedDate = Instant.ofEpochMilli(timestamp)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            selectCurrentDate(selectedDate)
+                            return@Dialog
+
+                        },
+                    ) {
+                        Box(
+                            modifier = Modifier.background(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                            )
+                        }
+                    }
+                }
+            }
 
             val dayFormatter by remember {
                 mutableStateOf(
@@ -448,7 +523,7 @@ fun WeeklyForecast(
                 ),
                 modifier = Modifier.clickable {
                     val nextWeek = currentDate.plusDays(7)
-                    onSelectCurrentDate(nextWeek)
+                    selectCurrentDate(nextWeek)
                 }
             ) {
                 Row(

@@ -2,15 +2,15 @@ package com.example.agritech.data
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import com.example.agritech.R
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+
+val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM uuuu")
+
 fun getCurrentDateTime(): String {
     val currentDateTime = LocalDateTime.now()
-    val formatter = DateTimeFormatter.ofPattern("yyyy MMM EEEE")
     return currentDateTime.format(formatter)
 }
 
