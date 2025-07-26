@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -44,28 +47,31 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.agritech.R
 import com.example.agritech.data.Note
+import com.example.agritech.data.Route
 import com.example.agritech.data.getCurrentDateTime
 import com.example.agritech.data.notes
-import com.example.agritech.ui.theme.OutfitFont
+import com.example.agritech.ui.theme.Poppins
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DailyForecast() {
+fun ViewArticles(
+    goBack: () -> Unit,
+) {
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Today's Weather",
+                        "Articles",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontFamily = OutfitFont
+                        fontFamily = Poppins
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {}) {
+                    IconButton(
+                        onClick = { goBack() }
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.arrow_back_24dp),
                             contentDescription = "Go Back",
@@ -90,12 +96,12 @@ fun DailyForecast() {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {},
-                shape = RoundedCornerShape(8.dp),
+                shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.add_24dp),
-                    contentDescription = "Add New Note",
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = "Search for articles",
                 )
             }
         }
@@ -103,7 +109,8 @@ fun DailyForecast() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             WeatherCard()
@@ -124,10 +131,10 @@ fun DailyForecast() {
                             modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
                         ) {
                             Text(
-                                "Notes",
+                                "Articles",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                fontFamily = OutfitFont
+                                fontFamily = Poppins
                             )
                         }
                     }
@@ -173,19 +180,19 @@ fun WeatherCard() {
                     Text(
                         "Kericho Kenya, $currentDateTime",
                         style = MaterialTheme.typography.titleMedium,
-                        fontFamily = OutfitFont
+                        fontFamily = Poppins
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
                         "33°C",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
-                        fontFamily = OutfitFont
+                        fontFamily = Poppins
                     )
                     Text(
                         "Humidity 76%",
                         style = MaterialTheme.typography.titleMedium,
-                        fontFamily = OutfitFont
+                        fontFamily = Poppins
                     )
                 }
                 Image(
@@ -203,7 +210,7 @@ fun WeatherCard() {
             Text(
                 "Today is a good day to spray pesticides",
                 style = MaterialTheme.typography.titleMedium,
-                fontFamily = OutfitFont
+                fontFamily = Poppins
             )
         }
     }
@@ -242,14 +249,14 @@ fun NotesCard(
                     note.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    fontFamily = OutfitFont
+                    fontFamily = Poppins
                 )
                 Text(
                     note.description,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    fontFamily = OutfitFont
+                    fontFamily = Poppins
                 )
             }
         }
@@ -276,5 +283,7 @@ fun PreviewNotesCard() {
 )
 @Composable
 fun PreviewApp() {
-    DailyForecast()
+    ViewArticles(
+        goBack = {},
+    )
 }

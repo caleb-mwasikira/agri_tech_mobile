@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +48,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,11 +56,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.agritech.R
 import com.example.agritech.data.PlantThreshold
+import com.example.agritech.data.Route
 import com.example.agritech.data.Weather
 import com.example.agritech.data.WeatherViewModel
 import com.example.agritech.data.formatter
 import com.example.agritech.data.getCurrentDateTime
-import com.example.agritech.ui.theme.OutfitFont
+import com.example.agritech.ui.theme.Poppins
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -92,6 +96,7 @@ fun getWeatherIcon(condition: String?): Int {
 @Composable
 fun WeeklyForecast(
     weatherViewModel: WeatherViewModel?,
+    navigateTo: (Route) -> Unit,
 ) {
     val scrollState = rememberScrollState()
 
@@ -102,7 +107,7 @@ fun WeeklyForecast(
                 .padding(innerPadding)
                 .padding(20.dp)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -117,15 +122,15 @@ fun WeeklyForecast(
                 Column {
                     Text(
                         "Kericho, Kenya",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontFamily = OutfitFont,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = Poppins,
                     )
 
                     val currentDateTime by remember { mutableStateOf(getCurrentDateTime()) }
                     Text(
                         currentDateTime,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontFamily = OutfitFont,
+                        fontFamily = Poppins,
                     )
                 }
             }
@@ -137,7 +142,7 @@ fun WeeklyForecast(
             )
             var selectedCrop by remember { mutableStateOf("Coffee") }
             var plantThreshold by remember { mutableStateOf<PlantThreshold?>(null) }
-            var recommendations by remember { mutableStateOf<List<String>?>(null) }
+            var recommendations by remember { mutableStateOf<List<String>>(emptyList()) }
             var currentDate by remember { mutableStateOf(LocalDate.now()) }
             var weeklyWeatherData by remember { mutableStateOf<List<Weather>?>(null) }
             var nextWeeksWeatherCondition by remember { mutableStateOf<String?>(null) }
@@ -149,7 +154,7 @@ fun WeeklyForecast(
                     currentDate.monthValue,
                     currentDate.dayOfMonth,
                     selectedCrop,
-                )
+                ) ?: emptyList()
 
                 // Get weather data
                 weeklyWeatherData = weatherViewModel?.getThisWeeksWeather(
@@ -173,13 +178,14 @@ fun WeeklyForecast(
 
             CropThresholds(
                 crop = selectedCrop,
-                temperature = plantThreshold?.minTemp?.toInt() ?: -1,
+                temperature = plantThreshold?.minTemp?.toInt() ?: 0,
                 precipitation = plantThreshold?.minPrecip?.toInt() ?: 0,
             )
 
             // Recommendation
             Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.padding(vertical = 8.dp),
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -187,24 +193,38 @@ fun WeeklyForecast(
                 ) {
                     Text(
                         "Recommendations",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontFamily = OutfitFont,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = Poppins,
                     )
                     Text(
                         currentDate.format(formatter),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = OutfitFont,
+                        fontFamily = Poppins,
                     )
                 }
 
-                Text(
-                    if (recommendations?.isEmpty() == true) "" else recommendations?.first() ?: "",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontFamily = OutfitFont,
-                )
+                val recommendation = if (recommendations.isEmpty()) {
+                    "No current recommendations"
+                } else {
+                    recommendations.first()
+                }
+
+                TextButton(
+                    onClick = {
+                        navigateTo(Route.ViewArticles)
+                    },
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Text(
+                        recommendation,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontFamily = Poppins,
+                        textDecoration = TextDecoration.Underline,
+                    )
+                }
             }
 
-            WeeklyForecast(
+            WeeklyForecastCard(
                 currentDate = currentDate,
                 selectCurrentDate = { newDate ->
                     currentDate = newDate
@@ -253,8 +273,8 @@ fun SelectCrop(
 
                 Text(
                     selectedCrop,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontFamily = OutfitFont,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontFamily = Poppins,
                 )
                 Icon(
                     painter = painterResource(R.drawable.dropdown_icon_24dp),
@@ -279,8 +299,8 @@ fun SelectCrop(
                         text = {
                             Text(
                                 crop,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontFamily = OutfitFont,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontFamily = Poppins,
                             )
                         },
                         onClick = {
@@ -303,15 +323,15 @@ fun CropThresholds(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(vertical = 12.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
                 "Conditions for growing $crop:",
-                style = MaterialTheme.typography.titleLarge,
-                fontFamily = OutfitFont,
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = Poppins,
                 modifier = Modifier
                     .width(320.dp)
                     .padding(bottom = 20.dp)
@@ -322,13 +342,13 @@ fun CropThresholds(
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontSize = 148.sp
                     ),
-                    fontFamily = OutfitFont,
+                    fontFamily = Poppins,
                 )
                 Column {
                     Text(
                         "°C",
                         style = MaterialTheme.typography.headlineMedium,
-                        fontFamily = OutfitFont,
+                        fontFamily = Poppins,
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -345,7 +365,7 @@ fun CropThresholds(
                         Text(
                             "$precipitation mm",
                             style = MaterialTheme.typography.titleMedium,
-                            fontFamily = OutfitFont,
+                            fontFamily = Poppins,
                         )
                     }
                 }
@@ -371,7 +391,7 @@ fun CropThresholds(
                 Text(
                     "Partly Cloudy",
                     style = MaterialTheme.typography.titleMedium,
-                    fontFamily = OutfitFont,
+                    fontFamily = Poppins,
                 )
             }
         }
@@ -380,7 +400,7 @@ fun CropThresholds(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WeeklyForecast(
+fun WeeklyForecastCard(
     currentDate: LocalDate,
     selectCurrentDate: (LocalDate) -> Unit,
     weatherData: List<Weather>,
@@ -405,13 +425,13 @@ fun WeeklyForecast(
                 Column {
                     Text(
                         "Weekly Forecast",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontFamily = OutfitFont,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = Poppins,
                     )
                     Text(
                         currentDate.format(formatter),
                         style = MaterialTheme.typography.bodyLarge,
-                        fontFamily = OutfitFont,
+                        fontFamily = Poppins,
                     )
                 }
 
@@ -478,8 +498,8 @@ fun WeeklyForecast(
                     item {
                         Text(
                             "No weather data found for this week",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontFamily = OutfitFont,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontFamily = Poppins,
                         )
                     }
                     return@LazyRow
@@ -501,14 +521,14 @@ fun WeeklyForecast(
                         Text(
                             weatherToday.date.format(dayFormatter),
                             style = MaterialTheme.typography.bodyLarge,
-                            fontFamily = OutfitFont,
+                            fontFamily = Poppins,
                         )
                         Text(
                             "${weatherToday.temp} °C",
-                            style = MaterialTheme.typography.titleLarge.copy(
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                             ),
-                            fontFamily = OutfitFont,
+                            fontFamily = Poppins,
                         )
                     }
                 }
@@ -550,15 +570,15 @@ fun WeeklyForecast(
                     Column {
                         Text(
                             "Next Week",
-                            style = MaterialTheme.typography.titleLarge.copy(
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                             ),
-                            fontFamily = OutfitFont,
+                            fontFamily = Poppins,
                         )
                         Text(
                             nextWeeksWeatherCondition,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = OutfitFont,
+                            fontFamily = Poppins,
                         )
                     }
                 }
@@ -573,6 +593,7 @@ fun WeeklyForecast(
 @Composable
 fun PreviewWeeklyForecast() {
     WeeklyForecast(
-        weatherViewModel = null
+        weatherViewModel = null,
+        navigateTo = {},
     )
 }

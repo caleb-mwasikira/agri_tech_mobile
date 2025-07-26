@@ -75,7 +75,7 @@ val gson = GsonBuilder()
 
 val api: WeatherApi by lazy {
     Retrofit.Builder()
-        .baseUrl("http://192.168.43.141:5000/")
+        .baseUrl("http://192.168.43.211:5000/")
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
         .create(WeatherApi::class.java)
