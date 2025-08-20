@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
@@ -37,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,53 +56,50 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.agritech.R
-import com.example.agritech.data.PlantThreshold
 import com.example.agritech.data.Route
 import com.example.agritech.data.Weather
-import com.example.agritech.data.WeatherViewModel
+import com.example.agritech.data.AppViewModel
+import com.example.agritech.data.CropThreshold
 import com.example.agritech.data.formatter
 import com.example.agritech.data.getCurrentDateTime
+import com.example.agritech.data.getWeatherIcon
+import com.example.agritech.data.parseLocation
+import com.example.agritech.ui.theme.AgriTechTheme
 import com.example.agritech.ui.theme.Poppins
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-fun getMostFrequentWeatherCondition(weatherList: List<Weather>): String {
-    val mostFrequentWeatherCondition = weatherList.groupingBy { it.conditions }
-        .eachCount()
-        .maxByOrNull { it.value }
-        ?.key
-    var words: List<String> = mostFrequentWeatherCondition?.split("_") ?: return ""
-    words = words.map { word ->
-        word.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-        }
-    }
-    return words.joinToString(" ")
-}
-
-fun getWeatherIcon(condition: String?): Int {
-    return when (condition) {
-        "partially_cloudy" -> R.drawable.partially_cloudy
-        "rain", "rain_partially_cloudy" -> R.drawable.rain_partially_cloudy
-        "clear" -> R.drawable.clear_24dp
-        "rain_overcast" -> R.drawable.rain_overcast
-        "overcast" -> R.drawable.dark_cloud_24dp
-        else -> R.drawable.sunny_sunglasses_24dp
-    }
-}
 
 @Composable
 fun WeeklyForecast(
-    weatherViewModel: WeatherViewModel?,
+    appViewModel: AppViewModel = viewModel(),
     navigateTo: (Route) -> Unit,
 ) {
     val scrollState = rememberScrollState()
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        val context = LocalContext.current
+        var error by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(Unit) {
+            appViewModel.errors.collect {
+                error = it
+                delay(4000)
+                error = null
+            }
+        }
+
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG)
+                .show()
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -113,15 +112,23 @@ fun WeeklyForecast(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.location_24dp),
+                Image(
+                    painter = painterResource(R.drawable.map2_24dp),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
 
-                Column {
+                var displaySelectLocation: Boolean by remember { mutableStateOf(false) }
+                val locations: List<String> by appViewModel.locations.collectAsState()
+                val selectedLocation: String? by appViewModel.selectedLocation.collectAsState()
+
+                Column(
+                    modifier = Modifier.clickable(
+                        onClick = { displaySelectLocation = true },
+                    )
+                ) {
                     Text(
-                        "Kericho, Kenya",
+                        parseLocation(selectedLocation) ?: "Unknown Location",
                         style = MaterialTheme.typography.titleMedium,
                         fontFamily = Poppins,
                     )
@@ -133,53 +140,41 @@ fun WeeklyForecast(
                         fontFamily = Poppins,
                     )
                 }
+
+                if (displaySelectLocation) {
+                    SelectLocation(
+                        locations = locations,
+                        onDismissRequest = {
+                            displaySelectLocation = false
+                        },
+                        selectLocation = {
+                            displaySelectLocation = false
+                            appViewModel.updateSelectedLocation(it)
+                        }
+                    )
+                }
             }
 
-            val crops = mapOf(
-                "Coffee" to R.drawable.coffee_beans_24dp,
-                "Tea" to R.drawable.tea_leaves_24dp,
-                "Maize" to R.drawable.corn_24dp
-            )
-            var selectedCrop by remember { mutableStateOf("Coffee") }
-            var plantThreshold by remember { mutableStateOf<PlantThreshold?>(null) }
-            var recommendations by remember { mutableStateOf<List<String>>(emptyList()) }
-            var currentDate by remember { mutableStateOf(LocalDate.now()) }
-            var weeklyWeatherData by remember { mutableStateOf<List<Weather>?>(null) }
-            var nextWeeksWeatherCondition by remember { mutableStateOf<String?>(null) }
-
-            LaunchedEffect(selectedCrop, currentDate) {
-                // Get plant threshold and recommendations
-                plantThreshold = weatherViewModel?.getPlantThresholds(selectedCrop)
-                recommendations = weatherViewModel?.getWeeklyRecommendations(
-                    currentDate.monthValue,
-                    currentDate.dayOfMonth,
-                    selectedCrop,
-                ) ?: emptyList()
-
-                // Get weather data
-                weeklyWeatherData = weatherViewModel?.getThisWeeksWeather(
-                    currentDate.monthValue, currentDate.dayOfMonth
-                )
-
-                val nextWeek = currentDate.plusDays(7)
-                val nextWeeksWeatherData = weatherViewModel?.getThisWeeksWeather(
-                    nextWeek.monthValue, nextWeek.dayOfMonth
-                ) ?: emptyList()
-                nextWeeksWeatherCondition = getMostFrequentWeatherCondition(nextWeeksWeatherData)
-            }
+            val selectedCrop by appViewModel.selectedCrop.collectAsState()
+            val cropThreshold by appViewModel.cropThreshold.collectAsState()
+            val recommendations by appViewModel.recommendations.collectAsState()
+            val currentDate by appViewModel.currentDate.collectAsState()
+            val weeklyWeatherData by appViewModel.weeklyWeatherData.collectAsState()
+            val nextWeeksWeatherCondition by appViewModel.nextWeeksWeatherCondition.collectAsState()
+            val suitableCrops by appViewModel.suitableCrops.collectAsState()
 
             SelectCrop(
-                crops = crops,
-                selectedCrop = selectedCrop,
+                crops = suitableCrops,
+                selectedCrop = selectedCrop ?: "No Crop Selected",
                 onSelectCrop = {
-                    selectedCrop = it
+                    appViewModel.updateSelectedCrop(it)
                 }
             )
 
             CropThresholds(
-                crop = selectedCrop,
-                temperature = plantThreshold?.minTemp?.toInt() ?: 0,
-                precipitation = plantThreshold?.minPrecip?.toInt() ?: 0,
+                crop = selectedCrop ?: "No Crop Selected",
+                temperature = cropThreshold?.minTemp?.toInt() ?: 0,
+                precipitation = cropThreshold?.minPrecip?.toInt() ?: 0,
             )
 
             // Recommendation
@@ -214,6 +209,7 @@ fun WeeklyForecast(
                         navigateTo(Route.ViewArticles)
                     },
                     contentPadding = PaddingValues(0.dp),
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         recommendation,
@@ -227,9 +223,9 @@ fun WeeklyForecast(
             WeeklyForecastCard(
                 currentDate = currentDate,
                 selectCurrentDate = { newDate ->
-                    currentDate = newDate
+                    appViewModel.updateCurrentDate(newDate)
                 },
-                weatherData = weeklyWeatherData ?: emptyList(),
+                weatherData = weeklyWeatherData,
                 nextWeeksWeatherCondition = nextWeeksWeatherCondition ?: ""
             )
         }
@@ -237,8 +233,90 @@ fun WeeklyForecast(
 }
 
 @Composable
+fun SelectLocation(
+    locations: List<String>,
+    onDismissRequest: () -> Unit,
+    selectLocation: (String) -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+    ) {
+        Card(
+            colors = CardDefaults.cardColors().copy(
+                containerColor = MaterialTheme.colorScheme.onPrimary,
+                contentColor = MaterialTheme.colorScheme.scrim,
+            ),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.map_24dp),
+                        contentDescription = "Select Location",
+                        modifier = Modifier.size(56.dp),
+                    )
+                    Text(
+                        "Select Location",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                }
+
+                if (locations.isEmpty()) {
+                    Text(
+                        "No locations available",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                    return@Column
+                }
+
+                locations.forEach { location ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .clickable(
+                                onClick = { selectLocation(location) }
+                            )
+                            .clip(RoundedCornerShape(12.dp)),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.location_24dp),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+
+                        Text(
+                            parseLocation(location) ?: "",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun SelectCrop(
-    crops: Map<String, Int>,
+    crops: List<CropThreshold>,
     selectedCrop: String,
     onSelectCrop: (String) -> Unit,
 ) {
@@ -262,14 +340,14 @@ fun SelectCrop(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(8.dp),
             ) {
-                val selectedCropIcon = crops[selectedCrop]
-                selectedCropIcon?.let {
-                    Image(
-                        painter = painterResource(it),
-                        contentDescription = "Selected Crop",
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
+//                val selectedCropIcon = crops.filter { it.crop == selectedCrop.crop }
+//                selectedCropIcon?.let {
+//                    Image(
+//                        painter = painterResource(it),
+//                        contentDescription = "Selected Crop",
+//                        modifier = Modifier.size(24.dp),
+//                    )
+//                }
 
                 Text(
                     selectedCrop,
@@ -293,19 +371,19 @@ fun SelectCrop(
                 color = MaterialTheme.colorScheme.onPrimary
             ),
         ) {
-            crops.keys.forEach { crop ->
-                if (selectedCrop != crop) {
+            crops.forEach { crop ->
+                if (selectedCrop != crop.name) {
                     DropdownMenuItem(
                         text = {
                             Text(
-                                crop,
+                                crop.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontFamily = Poppins,
                             )
                         },
                         onClick = {
                             expanded = false
-                            onSelectCrop(crop)
+                            onSelectCrop(crop.name)
                         }
                     )
                 }
@@ -470,9 +548,12 @@ fun WeeklyForecastCard(
                         },
                     ) {
                         Box(
-                            modifier = Modifier.background(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+                                .padding(12.dp)
                         ) {
                             DatePicker(
                                 state = datePickerState,
@@ -593,7 +674,20 @@ fun WeeklyForecastCard(
 @Composable
 fun PreviewWeeklyForecast() {
     WeeklyForecast(
-        weatherViewModel = null,
         navigateTo = {},
     )
+}
+
+@Preview(
+    showBackground = true, device = Devices.PIXEL_7,
+)
+@Composable
+fun PreviewSelectLocation() {
+    AgriTechTheme {
+        SelectLocation(
+            locations = listOf("Nariobi", "Tokyo", "Oslo", "Denver"),
+            onDismissRequest = {},
+            selectLocation = {}
+        )
+    }
 }

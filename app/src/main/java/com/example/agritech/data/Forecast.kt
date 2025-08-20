@@ -26,7 +26,7 @@ val notes = mutableListOf(
     Note(
         id = 1,
         title = "From Seed to Sip. The Journey of a Tea Plant",
-        description = "Explore the life cycle of a tea plant, from careful seed selection and nursery practices to the first flush of leaves ready for harvest.",
+        description = "Explore the life cycle of a tea crop, from careful seed selection and nursery practices to the first flush of leaves ready for harvest.",
         imageUrl = R.drawable.tea
     ),
     Note(

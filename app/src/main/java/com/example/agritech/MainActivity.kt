@@ -8,14 +8,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.agritech.data.Route
-import com.example.agritech.data.WeatherViewModel
+import com.example.agritech.data.AppViewModel
 import com.example.agritech.screens.ViewArticles
 import com.example.agritech.screens.SplashScreen
 import com.example.agritech.screens.WeeklyForecast
 import com.example.agritech.ui.theme.AgriTechTheme
 
 class MainActivity : ComponentActivity() {
-    private val weatherViewModel = WeatherViewModel()
+    private val appViewModel = AppViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Route.WeeklyForecast.name) {
                         WeeklyForecast(
-                            weatherViewModel = weatherViewModel,
+                            appViewModel = appViewModel,
                             navigateTo = { route ->
                                 navController.navigate(route.name)
                             }
@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Route.ViewArticles.name) {
                         ViewArticles(
+                            appViewModel = appViewModel,
                             goBack = {
                                 navController.popBackStack()
                             }
