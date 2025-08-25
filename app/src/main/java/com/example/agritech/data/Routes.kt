@@ -1,5 +1,6 @@
 package com.example.agritech.data
 
 enum class Route {
-    SplashScreen, WeeklyForecast, ViewArticles,
+    SplashScreen, HomeScreen, ViewArticles,
+    LoginScreen, SignUpScreen, ForgotPasswordScreen,
 }

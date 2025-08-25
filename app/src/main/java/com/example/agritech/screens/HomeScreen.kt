@@ -58,14 +58,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.agritech.R
-import com.example.agritech.data.Route
-import com.example.agritech.data.Weather
 import com.example.agritech.data.AppViewModel
-import com.example.agritech.data.CropThreshold
+import com.example.agritech.data.Route
 import com.example.agritech.data.formatter
 import com.example.agritech.data.getCurrentDateTime
 import com.example.agritech.data.getWeatherIcon
 import com.example.agritech.data.parseLocation
+import com.example.agritech.remote.CropThreshold
+import com.example.agritech.remote.Weather
 import com.example.agritech.ui.theme.AgriTechTheme
 import com.example.agritech.ui.theme.Poppins
 import kotlinx.coroutines.delay
@@ -75,7 +75,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun WeeklyForecast(
+fun HomeScreen(
     appViewModel: AppViewModel = viewModel(),
     navigateTo: (Route) -> Unit,
 ) {
@@ -672,8 +672,8 @@ fun WeeklyForecastCard(
     showBackground = true, device = Devices.PIXEL_7,
 )
 @Composable
-fun PreviewWeeklyForecast() {
-    WeeklyForecast(
+fun PreviewHomeScreen() {
+    HomeScreen(
         navigateTo = {},
     )
 }

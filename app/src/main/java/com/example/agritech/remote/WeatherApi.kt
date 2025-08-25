@@ -1,17 +1,14 @@
-package com.example.agritech.data
+package com.example.agritech.remote
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
-import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
-import java.lang.reflect.Type
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -123,9 +120,9 @@ val gson: Gson = GsonBuilder()
     .registerTypeAdapter(LocalDateTime::class.java, localDateTimeAdapter)
     .create()
 
-val api: WeatherApi by lazy {
+val weatherApi: WeatherApi by lazy {
     Retrofit.Builder()
-        .baseUrl("http://192.168.167.46:5000/")
+        .baseUrl("http://$BASE_IP_ADDRESS/")
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
         .create(WeatherApi::class.java)

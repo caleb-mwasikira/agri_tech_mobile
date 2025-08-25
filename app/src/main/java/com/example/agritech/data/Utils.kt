@@ -1,6 +1,7 @@
 package com.example.agritech.data
 
 import com.example.agritech.R
+import com.example.agritech.remote.Weather
 import java.util.Locale
 
 fun parseLocation(location: String?): String? {

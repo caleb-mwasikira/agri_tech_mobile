@@ -3,6 +3,9 @@ package com.example.agritech.data
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.agritech.remote.CropThreshold
+import com.example.agritech.remote.Weather
+import com.example.agritech.remote.weatherApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,11 +79,11 @@ class AppViewModel : ViewModel() {
     private suspend fun fetchData() {
         withContext(Dispatchers.IO) {
             try {
-                val allLocations = api.getAllLocations()
+                val allLocations = weatherApi.getAllLocations()
                 _locations.value = allLocations
                 _selectedLocation.value = allLocations.firstOrNull()
 
-                val allCrops = api.getAllCrops()
+                val allCrops = weatherApi.getAllCrops()
                 _suitableCrops.value = allCrops
                 _selectedCrop.value = allCrops.firstOrNull()?.name
             } catch (e: Exception) {
@@ -94,9 +97,9 @@ class AppViewModel : ViewModel() {
         withContext(Dispatchers.IO) {
             _selectedLocation.value?.let { location ->
                 try {
-                    _todaysWeather.value = api.getTodaysWeather(location)
+                    _todaysWeather.value = weatherApi.getTodaysWeather(location)
 
-                    val thisWeeksWeather = api.getThisWeeksWeather(
+                    val thisWeeksWeather = weatherApi.getThisWeeksWeather(
                         location,
                         _currentDate.value.monthValue,
                         _currentDate.value.dayOfMonth
@@ -105,7 +108,7 @@ class AppViewModel : ViewModel() {
 
                     // Fetch next week's weather condition
                     val nextWeek = _currentDate.value.plusDays(7)
-                    val nextWeeksWeatherData = api.getThisWeeksWeather(
+                    val nextWeeksWeatherData = weatherApi.getThisWeeksWeather(
                         location,
                         nextWeek.monthValue,
                         nextWeek.dayOfMonth
@@ -125,10 +128,10 @@ class AppViewModel : ViewModel() {
             _selectedLocation.value?.let { location ->
                 _selectedCrop.value?.let { crop ->
                     try {
-                        val cropThreshold = api.getCropThresholds(crop)
+                        val cropThreshold = weatherApi.getCropThresholds(crop)
                         _cropThreshold.value = cropThreshold
 
-                        val recommendations = api.getWeeklyRecommendations(
+                        val recommendations = weatherApi.getWeeklyRecommendations(
                             location,
                             _currentDate.value.monthValue,
                             _currentDate.value.dayOfMonth,

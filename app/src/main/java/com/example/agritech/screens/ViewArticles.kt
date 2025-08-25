@@ -29,9 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,23 +40,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.agritech.R
-import com.example.agritech.data.Note
-import com.example.agritech.data.Weather
 import com.example.agritech.data.AppViewModel
+import com.example.agritech.data.Note
 import com.example.agritech.data.getCurrentDateTime
 import com.example.agritech.data.getWeatherIcon
 import com.example.agritech.data.notes
 import com.example.agritech.data.parseLocation
+import com.example.agritech.remote.Weather
 import com.example.agritech.ui.theme.Poppins
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +196,7 @@ fun WeatherCard(
                         fontFamily = Poppins
                     )
                     Spacer(Modifier.height(12.dp))
-                    Row() {
+                    Row {
                         Text(
                             "${todaysWeather?.temp ?: 0}",
                             style = MaterialTheme.typography.headlineSmall,

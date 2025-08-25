@@ -86,7 +86,7 @@ fun SplashScreen(
 
             LaunchedEffect(Unit) {
                 delay(8000)
-                navigateTo(Route.WeeklyForecast)
+                navigateTo(Route.SignUpScreen)
             }
 
             Column(
